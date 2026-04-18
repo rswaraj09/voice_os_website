@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nora Voice OS — AI-Powered Voice Assistant for Windows</title>
+
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #030305;
+    --bg2: #080810;
+    --bg3: #0e0e1a;
+    --surface: #111120;
+    --surface2: #18182e;
+    --border: rgba(120,120,255,0.12);
+    --border2: rgba(120,120,255,0.22);
+    --accent: #6c63ff;
+    --accent2: #a78bfa;
+    --accent3: #38bdf8;
+    --green: #34d399;
+    --pink: #f472b6;
+    --text: #f0f0ff;
+    --muted: #8585b0;
+    --muted2: #5a5a80;
+    --font-display: 'Times New Roman', Times, serif;
+    --font-body: 'Times New Roman', Times, serif;
+    --glow: 0 0 60px rgba(108,99,255,0.18);
+    --glow2: 0 0 120px rgba(108,99,255,0.1);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ─── NOISE OVERLAY ─── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    background-size: 256px;
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.6;
+  }
+
+  /* ─── GRADIENT ORB BACKGROUNDS ─── */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(100px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .orb1 { width: 800px; height: 800px; background: radial-gradient(circle, rgba(108,99,255,0.15) 0%, transparent 70%); top: -200px; left: -200px; }
+  .orb2 { width: 600px; height: 600px; background: radial-gradient(circle, rgba(56,189,248,0.1) 0%, transparent 70%); top: 40vh; right: -150px; }
+  .orb3 { width: 500px; height: 500px; background: radial-gradient(circle, rgba(167,139,250,0.08) 0%, transparent 70%); bottom: 10vh; left: 10vw; }
+
+  /* ─── NAVBAR ─── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 900;
+    padding: 1.2rem 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(3,3,5,0.7);
+    backdrop-filter: blur(24px);
+    border-bottom: 1px solid var(--border);
+    transition: all 0.3s ease;
+  }
+  nav.scrolled { padding: 0.8rem 3rem; background: rgba(3,3,5,0.92); }
+
+  .nav-logo {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .nav-logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .nav-logo-icon::after {
+    content: '';
+    position: absolute;
+    width: 16px; height: 2px;
+    background: white;
+    border-radius: 2px;
+    box-shadow: 0 -5px 0 white, 0 5px 0 white;
+    transform: scaleX(0.7);
+  }
+  .nav-logo-icon::before {
+    content: '';
+    position: absolute;
+    width: 20px; height: 2px;
+    background: white;
+    border-radius: 2px;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 2.5rem;
+    list-style: none;
+  }
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    transition: color 0.2s;
+    position: relative;
+  }
+  .nav-links a::after {
+    content: '';
+    position: absolute;
+    bottom: -2px; left: 0; right: 0;
+    height: 1px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transition: transform 0.2s ease;
+  }
+  .nav-links a:hover { color: var(--text); }
+  .nav-links a:hover::after { transform: scaleX(1); }
+
+  .nav-cta {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white !important;
+    padding: 0.55rem 1.4rem !important;
+    border-radius: 100px;
+    font-weight: 500 !important;
+    transition: opacity 0.2s, transform 0.2s !important;
+    box-shadow: 0 0 24px rgba(108,99,255,0.3);
+  }
+  .nav-cta::after { display: none !important; }
+  .nav-cta:hover { opacity: 0.85; transform: translateY(-1px) !important; }
+
+  /* ─── HERO ─── */
+  #hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 8rem 2rem 6rem;
+    position: relative;
+    z-index: 10;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(108,99,255,0.12);
+    border: 1px solid rgba(108,99,255,0.3);
+    color: var(--accent2);
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.4rem 1rem;
+    border-radius: 100px;
+    margin-bottom: 2.5rem;
+    animation: fadeUp 0.8s ease both;
+  }
+  .hero-badge-dot {
+    width: 6px; height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  .hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(3rem, 8vw, 7rem);
+    font-weight: 800;
+    line-height: 1.0;
+    letter-spacing: -0.03em;
+    max-width: 900px;
+    animation: fadeUp 0.8s 0.1s ease both;
+  }
+
+  .hero-title .gradient-text {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 50%, var(--accent3) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-sub {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    color: var(--muted);
+    max-width: 560px;
+    margin: 2rem auto 3.5rem;
+    font-weight: 300;
+    line-height: 1.8;
+    animation: fadeUp 0.8s 0.2s ease both;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    animation: fadeUp 0.8s 0.3s ease both;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+    padding: 0.9rem 2.2rem;
+    border-radius: 100px;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 500;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 0 40px rgba(108,99,255,0.35), 0 4px 20px rgba(0,0,0,0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 60px rgba(108,99,255,0.5), 0 8px 30px rgba(0,0,0,0.5); }
+  .btn-primary:hover::before { opacity: 1; }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: transparent;
+    color: var(--text);
+    padding: 0.9rem 2.2rem;
+    border-radius: 100px;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 400;
+    text-decoration: none;
+    border: 1px solid var(--border2);
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, transform 0.2s;
+  }
+  .btn-secondary:hover { background: rgba(120,120,255,0.08); border-color: rgba(120,120,255,0.4); transform: translateY(-2px); }
+
+  /* ─── WAVEFORM ANIMATION ─── */
+  .waveform {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    margin: 4rem 0 0;
+    animation: fadeUp 0.8s 0.4s ease both;
+  }
+  .waveform-bar {
+    width: 3px;
+    border-radius: 3px;
+    background: linear-gradient(to top, var(--accent), var(--accent3));
+    opacity: 0.7;
+    animation: wave 1.4s ease-in-out infinite;
+  }
+  .waveform-bar:nth-child(1)  { height: 20px; animation-delay: 0.0s; }
+  .waveform-bar:nth-child(2)  { height: 35px; animation-delay: 0.1s; }
+  .waveform-bar:nth-child(3)  { height: 50px; animation-delay: 0.2s; }
+  .waveform-bar:nth-child(4)  { height: 65px; animation-delay: 0.1s; }
+  .waveform-bar:nth-child(5)  { height: 80px; animation-delay: 0.3s; }
+  .waveform-bar:nth-child(6)  { height: 95px; animation-delay: 0.15s; }
+  .waveform-bar:nth-child(7)  { height: 110px; animation-delay: 0.25s; }
+  .waveform-bar:nth-child(8)  { height: 90px; animation-delay: 0.4s; }
+  .waveform-bar:nth-child(9)  { height: 75px; animation-delay: 0.05s; }
+  .waveform-bar:nth-child(10) { height: 100px; animation-delay: 0.35s; }
+  .waveform-bar:nth-child(11) { height: 85px; animation-delay: 0.2s; }
+  .waveform-bar:nth-child(12) { height: 70px; animation-delay: 0.1s; }
+  .waveform-bar:nth-child(13) { height: 55px; animation-delay: 0.3s; }
+  .waveform-bar:nth-child(14) { height: 40px; animation-delay: 0.15s; }
+  .waveform-bar:nth-child(15) { height: 25px; animation-delay: 0.25s; }
+  .waveform-bar:nth-child(16) { height: 45px; animation-delay: 0.4s; }
+  .waveform-bar:nth-child(17) { height: 60px; animation-delay: 0.05s; }
+  .waveform-bar:nth-child(18) { height: 75px; animation-delay: 0.2s; }
+  .waveform-bar:nth-child(19) { height: 55px; animation-delay: 0.35s; }
+  .waveform-bar:nth-child(20) { height: 35px; animation-delay: 0.1s; }
+
+  @keyframes wave {
+    0%, 100% { transform: scaleY(1); opacity: 0.7; }
+    50% { transform: scaleY(0.3); opacity: 0.3; }
+  }
+
+  /* ─── STATS STRIP ─── */
+  .stats-strip {
+    position: relative; z-index: 10;
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: rgba(8,8,16,0.6);
+    backdrop-filter: blur(20px);
+    padding: 2.5rem 0;
+    overflow: hidden;
+  }
+  .stats-strip::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%; transform: translateX(-50%);
+    width: 400px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+  .stat-item {
+    flex: 1;
+    max-width: 250px;
+    text-align: center;
+    padding: 0 2rem;
+    border-right: 1px solid var(--border);
+  }
+  .stat-item:last-child { border-right: none; }
+  .stat-num {
+    font-family: var(--font-display);
+    font-size: 2.8rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, var(--text), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    line-height: 1;
+  }
+  .stat-label { color: var(--muted); font-size: 0.85rem; margin-top: 0.4rem; letter-spacing: 0.05em; }
+
+  /* ─── SECTIONS ─── */
+  section {
+    position: relative;
+    z-index: 10;
+    padding: 8rem 2rem;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 1.2rem;
+  }
+  .section-label::before {
+    content: '';
+    width: 20px; height: 1px;
+    background: var(--accent2);
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+  }
+
+  .section-desc {
+    color: var(--muted);
+    font-size: 1.1rem;
+    max-width: 540px;
+    line-height: 1.8;
+    font-weight: 300;
+  }
+
+  /* ─── FEATURES ─── */
+  #features { padding-top: 6rem; }
+  .features-header {
+    text-align: center;
+    margin-bottom: 5rem;
+  }
+  .features-header .section-label { justify-content: center; }
+  .features-header .section-desc { margin: 0 auto; }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+
+  .feature-card {
+    background: var(--bg2);
+    padding: 2.5rem 2rem;
+    transition: background 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(108,99,255,0.06), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .feature-card:hover { background: var(--bg3); }
+  .feature-card:hover::before { opacity: 1; }
+
+  .feature-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 1.5rem;
+    font-size: 1.4rem;
+    position: relative;
+    z-index: 1;
+  }
+  .fi-purple { background: rgba(108,99,255,0.2); color: var(--accent2); }
+  .fi-blue   { background: rgba(56,189,248,0.15); color: var(--accent3); }
+  .fi-green  { background: rgba(52,211,153,0.15); color: var(--green); }
+  .fi-pink   { background: rgba(244,114,182,0.15); color: var(--pink); }
+  .fi-amber  { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .fi-teal   { background: rgba(45,212,191,0.15); color: #2dd4bf; }
+
+  .feature-title {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 0.6rem;
+    position: relative; z-index: 1;
+  }
+  .feature-desc {
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.7;
+    font-weight: 300;
+    position: relative; z-index: 1;
+  }
+
+  /* ─── DOWNLOAD ─── */
+  #download {
+    display: flex;
+    align-items: stretch;
+    gap: 4rem;
+    padding: 8rem 2rem;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+  .download-content { flex: 1; }
+  .download-card-wrap { flex: 1; display: flex; align-items: center; }
+
+  .download-card {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 24px;
+    padding: 2.5rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--glow);
+  }
+  .download-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+
+  .download-version-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(52,211,153,0.12);
+    border: 1px solid rgba(52,211,153,0.25);
+    color: var(--green);
+    font-size: 0.78rem;
+    font-weight: 500;
+    padding: 0.3rem 0.9rem;
+    border-radius: 100px;
+    margin-bottom: 1.5rem;
+  }
+
+  .download-card-title {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5rem;
+  }
+
+  .download-card-sub {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 2rem;
+  }
+
+  .download-info-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .download-info-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 0.9rem;
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+  .chip-icon { color: var(--accent2); font-size: 0.9rem; }
+
+  .download-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+    padding: 1.1rem 2rem;
+    border-radius: 14px;
+    font-family: var(--font-body);
+    font-size: 1.05rem;
+    font-weight: 500;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 0 40px rgba(108,99,255,0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .download-btn::after {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.08) 50%, transparent 60%);
+    transform: translateX(-100%);
+    transition: transform 0.6s;
+  }
+  .download-btn:hover { transform: translateY(-2px); box-shadow: 0 0 60px rgba(108,99,255,0.55); }
+  .download-btn:hover::after { transform: translateX(100%); }
+
+  .download-note {
+    text-align: center;
+    color: var(--muted2);
+    font-size: 0.8rem;
+    margin-top: 1rem;
+  }
+
+  /* ─── HOW IT WORKS ─── */
+  #how { max-width: 1280px; margin: 0 auto; padding: 8rem 2rem; }
+  .how-header { text-align: center; margin-bottom: 5rem; }
+  .how-header .section-label { justify-content: center; }
+  .how-header .section-desc { margin: 0 auto; }
+
+  .steps-wrap {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+  .step {
+    background: var(--bg2);
+    padding: 2.5rem 2rem;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s;
+  }
+  .step:hover { background: var(--bg3); }
+
+  .step-number {
+    font-family: var(--font-display);
+    font-size: 4rem;
+    font-weight: 800;
+    color: rgba(108,99,255,0.12);
+    line-height: 1;
+    margin-bottom: 1rem;
+    letter-spacing: -0.04em;
+    transition: color 0.3s;
+  }
+  .step:hover .step-number { color: rgba(108,99,255,0.25); }
+  .step-title { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; margin-bottom: 0.6rem; }
+  .step-desc { color: var(--muted); font-size: 0.88rem; line-height: 1.7; font-weight: 300; }
+
+  /* ─── REQUIREMENTS ─── */
+  #requirements { max-width: 1280px; margin: 0 auto; padding: 6rem 2rem 8rem; }
+  .req-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 4rem;
+  }
+  .req-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .req-card-title {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--text);
+  }
+  .req-list { list-style: none; }
+  .req-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.8rem;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .req-list li:last-child { border-bottom: none; }
+  .req-check {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: rgba(52,211,153,0.15);
+    border: 1px solid rgba(52,211,153,0.3);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+    font-size: 0.65rem;
+    color: var(--green);
+  }
+
+  /* ─── TESTIMONIALS ─── */
+  #testimonials { max-width: 1280px; margin: 0 auto; padding: 6rem 2rem; }
+  .testi-header { text-align: center; margin-bottom: 4rem; }
+  .testi-header .section-label { justify-content: center; }
+  .testi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+  .testi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem;
+    transition: border-color 0.3s, transform 0.3s;
+  }
+  .testi-card:hover { border-color: var(--border2); transform: translateY(-4px); }
+  .testi-stars { color: #fbbf24; font-size: 0.85rem; margin-bottom: 1rem; letter-spacing: 2px; }
+  .testi-text {
+    font-size: 0.95rem;
+    color: var(--muted);
+    line-height: 1.8;
+    font-weight: 300;
+    margin-bottom: 1.5rem;
+    font-style: italic;
+  }
+  .testi-author { display: flex; align-items: center; gap: 0.8rem; }
+  .testi-avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+  .testi-name { font-weight: 500; font-size: 0.9rem; }
+  .testi-role { font-size: 0.78rem; color: var(--muted2); }
+
+  /* ─── FAQ ─── */
+  #faq { max-width: 800px; margin: 0 auto; padding: 6rem 2rem; }
+  .faq-header { text-align: center; margin-bottom: 4rem; }
+  .faq-header .section-label { justify-content: center; }
+
+  .faq-item {
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .faq-q {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.5rem 0;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: color 0.2s;
+    user-select: none;
+  }
+  .faq-q:hover { color: var(--accent2); }
+  .faq-arrow {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.3s, background 0.3s;
+    font-size: 0.7rem;
+  }
+  .faq-item.open .faq-arrow { transform: rotate(180deg); background: rgba(108,99,255,0.2); }
+  .faq-a {
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.8;
+    font-weight: 300;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease, padding 0.3s;
+  }
+  .faq-item.open .faq-a { max-height: 200px; padding-bottom: 1.5rem; }
+
+  /* ─── CTA BANNER ─── */
+  .cta-banner {
+    position: relative;
+    z-index: 10;
+    margin: 0 2rem 6rem;
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+    background: linear-gradient(135deg, rgba(108,99,255,0.2), rgba(56,189,248,0.1));
+    border: 1px solid rgba(108,99,255,0.3);
+    border-radius: 28px;
+    padding: 5rem 4rem;
+    text-align: center;
+    overflow: hidden;
+  }
+  .cta-banner::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(108,99,255,0.8), transparent);
+  }
+  .cta-banner-glow {
+    position: absolute;
+    width: 600px; height: 300px;
+    background: radial-gradient(ellipse, rgba(108,99,255,0.2), transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  .cta-banner .section-title { margin-bottom: 1rem; position: relative; z-index: 1; }
+  .cta-banner .section-desc { margin: 0 auto 3rem; position: relative; z-index: 1; }
+  .cta-banner .hero-actions { position: relative; z-index: 1; }
+
+  /* ─── FOOTER ─── */
+  footer {
+    position: relative;
+    z-index: 10;
+    border-top: 1px solid var(--border);
+    padding: 4rem 4rem 3rem;
+    background: var(--bg2);
+  }
+  .footer-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 3rem;
+    padding-bottom: 3rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2rem;
+  }
+  .footer-brand p {
+    color: var(--muted);
+    font-size: 0.88rem;
+    line-height: 1.7;
+    margin-top: 1rem;
+    max-width: 260px;
+    font-weight: 300;
+  }
+  .footer-col-title {
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted2);
+    margin-bottom: 1.2rem;
+  }
+  .footer-col a {
+    display: block;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.88rem;
+    margin-bottom: 0.7rem;
+    transition: color 0.2s;
+  }
+  .footer-col a:hover { color: var(--text); }
+  .footer-bottom {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--muted2);
+    font-size: 0.82rem;
+  }
+  .footer-links-bottom { display: flex; gap: 1.5rem; }
+  .footer-links-bottom a { color: var(--muted2); text-decoration: none; transition: color 0.2s; }
+  .footer-links-bottom a:hover { color: var(--muted); }
+
+  /* ─── ANIMATIONS ─── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+  /* ─── GRID DIVIDER LINE ─── */
+  .full-bleed { max-width: none; }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 1024px) {
+    .features-grid, .steps-wrap { grid-template-columns: 1fr 1fr; }
+    .testi-grid { grid-template-columns: 1fr 1fr; }
+    #download { flex-direction: column; }
+    .footer-inner { grid-template-columns: 1fr 1fr; }
+    .req-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 768px) {
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { display: none; }
+    .features-grid, .steps-wrap, .testi-grid { grid-template-columns: 1fr; }
+    .stats-strip { flex-direction: column; align-items: center; }
+    .stat-item { border-right: none; border-bottom: 1px solid var(--border); padding: 1.5rem 0; }
+    .stat-item:last-child { border-bottom: none; }
+    .footer-inner { grid-template-columns: 1fr; gap: 2rem; }
+    .footer-bottom { flex-direction: column; gap: 1rem; text-align: center; }
+    .cta-banner { padding: 3rem 2rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- BACKGROUND ORBS -->
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
+<!-- NAVBAR -->
+<nav id="navbar">
+  <a href="#" class="nav-logo">
+    <div class="nav-logo-icon"></div>
+    Nora
+  </a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#commands">Commands</a></li>
+    <li><a href="#how">Setup Guide</a></li>
+    <li><a href="#requirements">Requirements</a></li>
+    <li><a href="#faq">FAQ</a></li>
+    <li><a href="#download" class="nav-cta">Download</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div id="hero">
+  <div class="hero-badge">
+    <div class="hero-badge-dot"></div>
+    Version 1.0.0 — Now Available for Windows
+  </div>
+  <h1 class="hero-title">
+    Meet Nora —<br>
+    <span class="gradient-text">your AI voice OS.</span>
+  </h1>
+  <p class="hero-sub">
+    Nora is an AI-powered voice assistant that lets you control your entire Windows machine by speaking. Say "Jarvis" to wake her up, and she'll open apps, generate images, build presentations, write code, and more.
+  </p>
+  <div class="hero-actions">
+    <a href="#download" class="btn-primary">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download Free
+    </a>
+    <a href="#how" class="btn-secondary">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+      Setup Guide
+    </a>
+  </div>
+  <div class="waveform">
+    <div class="waveform-bar"></div><div class="waveform-bar"></div>
+    <div class="waveform-bar"></div><div class="waveform-bar"></div>
+    <div class="waveform-bar"></div><div class="waveform-bar"></div>
+    <div class="waveform-bar"></div><div class="waveform-bar"></div>
+    <div class="waveform-bar"></div><div class="waveform-bar"></div>
+    <div class="waveform-bar"></div><div class="waveform-bar"></div>
+    <div class="waveform-bar"></div><div class="waveform-bar"></div>
+    <div class="waveform-bar"></div><div class="waveform-bar"></div>
+    <div class="waveform-bar"></div><div class="waveform-bar"></div>
+    <div class="waveform-bar"></div><div class="waveform-bar"></div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-strip reveal">
+  <div class="stat-item">
+    <div class="stat-num">99.2%</div>
+    <div class="stat-label">Voice Recognition Accuracy</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">&lt;80ms</div>
+    <div class="stat-label">Response Latency</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">500+</div>
+    <div class="stat-label">Voice Commands Built-in</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">4.9★</div>
+    <div class="stat-label">Average User Rating</div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="features-header reveal">
+    <div class="section-label">Capabilities</div>
+    <h2 class="section-title">Built different. <span class="gradient-text">Sounds better.</span></h2>
+    <p class="section-desc">Every feature engineered from the ground up for a seamless voice-first computing experience.</p>
+  </div>
+  <div class="features-grid reveal">
+    <div class="feature-card">
+      <div class="feature-icon fi-purple">🎙️</div>
+      <div class="feature-title">Wake Word Activation</div>
+      <p class="feature-desc">Say <strong style="color:var(--accent2);">"Jarvis"</strong> or press <strong style="color:var(--accent2);">Ctrl+J</strong> to wake Nora instantly. Say "stop" or "bye" to return to idle mode.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-blue">🖼️</div>
+      <div class="feature-title">AI Image Generation</div>
+      <p class="feature-desc">Say "Generate image of a futuristic city" and Nora creates it using Gemini AI — no extra tools needed, just your voice.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-green">📊</div>
+      <div class="feature-title">PowerPoint Builder</div>
+      <p class="feature-desc">Say "Create a PPT on climate change" and Nora builds a full presentation automatically using Node.js in the background.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-pink">💻</div>
+      <div class="feature-title">Full-Stack Code Generator</div>
+      <p class="feature-desc">Ask Nora to "Create a todo app in Python" and she scaffolds the entire project — files, folders, and code — powered by MongoDB.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-amber">📱</div>
+      <div class="feature-title">Phone Control via ADB</div>
+      <p class="feature-desc">Optionally connect your Android phone via ADB. Make WhatsApp calls, send messages, and control your device by voice.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-teal">🔊</div>
+      <div class="feature-title">System Control</div>
+      <p class="feature-desc">Open any app, set volume to exact percentages, manage files, and control Windows system settings — all hands-free.</p>
+    </div>
+  </div>
+</section>
+
+<!-- DOWNLOAD -->
+<div id="download" style="position:relative; z-index:10; max-width:1280px; margin:0 auto; padding:6rem 2rem 8rem; display:flex; align-items:center; gap:5rem;">
+  <div class="download-content reveal">
+    <div class="section-label">Get Started</div>
+    <h2 class="section-title">Download Nora <span class="gradient-text">for free.</span></h2>
+    <p class="section-desc" style="margin-bottom: 2.5rem;">
+      One ZIP file. Unzip, add your Gemini API key, and run <code style="color:var(--accent2); background:rgba(108,99,255,0.1); padding:2px 8px; border-radius:4px;">NoraVoice.exe</code>. That's it.
+    </p>
+    <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.8rem;">
+      <li style="display: flex; align-items: center; gap: 0.8rem; color: var(--muted); font-size: 0.9rem;">
+        <span style="color: var(--green); font-size: 1rem;">✓</span> Free forever — no subscription, no account
+      </li>
+      <li style="display: flex; align-items: center; gap: 0.8rem; color: var(--muted); font-size: 0.9rem;">
+        <span style="color: var(--green); font-size: 1rem;">✓</span> Works on Windows 10 &amp; 11 (64-bit)
+      </li>
+      <li style="display: flex; align-items: center; gap: 0.8rem; color: var(--muted); font-size: 0.9rem;">
+        <span style="color: var(--green); font-size: 1rem;">✓</span> Powered by Google Gemini AI
+      </li>
+      <li style="display: flex; align-items: center; gap: 0.8rem; color: var(--muted); font-size: 0.9rem;">
+        <span style="color: var(--green); font-size: 1rem;">✓</span> Optional phone control via ADB
+      </li>
+    </ul>
+  </div>
+  <div class="download-card-wrap reveal">
+    <div class="download-card">
+      <div class="download-version-badge">
+        <span style="width:7px;height:7px;background:var(--green);border-radius:50%;display:inline-block;"></span>
+        Latest Release — v1.0.0
+      </div>
+      <div class="download-card-title">Nora Voice OS</div>
+      <div class="download-card-sub">Windows · x64 · ZIP Package</div>
+
+      <div class="download-info-row">
+        <div class="download-info-chip"><span class="chip-icon">📦</span> ZIP Bundle</div>
+        <div class="download-info-chip"><span class="chip-icon">📅</span> 2025</div>
+        <div class="download-info-chip"><span class="chip-icon">🏷️</span> v1.0.0</div>
+      </div>
+
+      <!-- UPDATE THIS HREF WITH YOUR ACTUAL ZIP FILE PATH -->
+      <a href="NoraVoice.zip" download class="download-btn" id="dl-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download NoraVoice.zip
+      </a>
+      <p class="download-note">Requires Gemini API key · Free to obtain at ai.google.dev</p>
+    </div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS / SETUP GUIDE -->
+<section id="how" class="full-bleed" style="max-width:100%; padding:6rem 0; background: linear-gradient(180deg, transparent, rgba(8,8,16,0.8), transparent);">
+  <div style="max-width:1280px; margin: 0 auto; padding: 0 2rem;">
+    <div class="how-header reveal">
+      <div class="section-label">Setup Guide</div>
+      <h2 class="section-title">From ZIP to first command <span class="gradient-text">in minutes.</span></h2>
+      <p class="section-desc">Follow these steps exactly and Nora will be running on your machine in under 10 minutes.</p>
+    </div>
+
+    <!-- STEP 1: Download & Extract -->
+    <div style="margin-bottom: 2px;" class="reveal">
+      <div class="step-block" style="background:var(--bg2); border:1px solid var(--border); border-radius:20px 20px 0 0; padding:2.5rem 3rem; display:flex; gap:2.5rem; align-items:flex-start;">
+        <div style="min-width:56px; height:56px; border-radius:14px; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:800; font-size:1.3rem; color:white; flex-shrink:0;">1</div>
+        <div style="flex:1;">
+          <div style="font-family:var(--font-display); font-size:1.3rem; font-weight:700; margin-bottom:0.5rem;">Download &amp; Extract the ZIP</div>
+          <p style="color:var(--muted); font-size:0.92rem; margin-bottom:1.2rem; font-weight:300;">Click the download button above to get <code style="color:var(--accent2); background:rgba(108,99,255,0.12); padding:2px 7px; border-radius:5px; font-family:monospace;">NoraVoice.zip</code>. Once downloaded, right-click the file and select <strong style="color:var(--text);">Extract All</strong>. Extract to a permanent location — for example <code style="color:var(--accent2); background:rgba(108,99,255,0.12); padding:2px 7px; border-radius:5px; font-family:monospace;">C:\NoraVoice\</code>. Do not run it from inside the ZIP.</p>
+          <div style="background:rgba(52,211,153,0.07); border:1px solid rgba(52,211,153,0.2); border-radius:10px; padding:1rem 1.2rem; font-size:0.85rem; color:var(--muted); display:flex; gap:0.7rem; align-items:flex-start;">
+            <span style="color:var(--green); font-size:1rem; flex-shrink:0;">ℹ</span>
+            After extraction you should see <code style="color:var(--accent2); font-family:monospace;">NoraVoice.exe</code>, a <code style="color:var(--accent2); font-family:monospace;">.env</code> file, and supporting folders inside the extracted directory.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: Install Dependencies -->
+    <div style="margin-bottom: 2px;" class="reveal">
+      <div class="step-block" style="background:var(--bg2); border:1px solid var(--border); border-top:none; padding:2.5rem 3rem; display:flex; gap:2.5rem; align-items:flex-start;">
+        <div style="min-width:56px; height:56px; border-radius:14px; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:800; font-size:1.3rem; color:white; flex-shrink:0;">2</div>
+        <div style="flex:1;">
+          <div style="font-family:var(--font-display); font-size:1.3rem; font-weight:700; margin-bottom:0.5rem;">Install Required Software</div>
+          <p style="color:var(--muted); font-size:0.92rem; margin-bottom:1.4rem; font-weight:300;">Nora relies on a few external tools. Install them before running the app for the first time:</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem;">
+            <div style="background:var(--surface); border:1px solid var(--border2); border-radius:12px; padding:1.2rem 1.4rem;">
+              <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.5rem;">
+                <span style="font-size:1.2rem;">🟢</span>
+                <span style="font-family:var(--font-display); font-weight:700; font-size:0.95rem;">Node.js</span>
+                <span style="font-size:0.72rem; color:var(--green); background:rgba(52,211,153,0.12); border:1px solid rgba(52,211,153,0.25); padding:2px 8px; border-radius:100px;">Required</span>
+              </div>
+              <p style="color:var(--muted); font-size:0.82rem; font-weight:300; margin-bottom:0.8rem;">Needed for PPT generation. Download LTS version.</p>
+              <a href="https://nodejs.org" target="_blank" style="color:var(--accent2); font-size:0.82rem; text-decoration:none; border-bottom:1px solid rgba(167,139,250,0.3);">nodejs.org ↗</a>
+            </div>
+            <div style="background:var(--surface); border:1px solid var(--border2); border-radius:12px; padding:1.2rem 1.4rem;">
+              <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.5rem;">
+                <span style="font-size:1.2rem;">🍃</span>
+                <span style="font-family:var(--font-display); font-weight:700; font-size:0.95rem;">MongoDB</span>
+                <span style="font-size:0.72rem; color:var(--green); background:rgba(52,211,153,0.12); border:1px solid rgba(52,211,153,0.25); padding:2px 8px; border-radius:100px;">Required</span>
+              </div>
+              <p style="color:var(--muted); font-size:0.82rem; font-weight:300; margin-bottom:0.8rem;">Needed for the code generator. Install Community Edition.</p>
+              <a href="https://www.mongodb.com/try/download/community" target="_blank" style="color:var(--accent2); font-size:0.82rem; text-decoration:none; border-bottom:1px solid rgba(167,139,250,0.3);">mongodb.com ↗</a>
+            </div>
+            <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.2rem 1.4rem;">
+              <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.5rem;">
+                <span style="font-size:1.2rem;">📱</span>
+                <span style="font-family:var(--font-display); font-weight:700; font-size:0.95rem;">ADB</span>
+                <span style="font-size:0.72rem; color:var(--muted2); background:rgba(90,90,128,0.15); border:1px solid rgba(90,90,128,0.3); padding:2px 8px; border-radius:100px;">Optional</span>
+              </div>
+              <p style="color:var(--muted); font-size:0.82rem; font-weight:300; margin-bottom:0.8rem;">Only needed if you want phone control. Android platform-tools.</p>
+              <a href="https://developer.android.com/studio/releases/platform-tools" target="_blank" style="color:var(--accent2); font-size:0.82rem; text-decoration:none; border-bottom:1px solid rgba(167,139,250,0.3);">developer.android.com ↗</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: API Key -->
+    <div style="margin-bottom: 2px;" class="reveal">
+      <div class="step-block" style="background:var(--bg2); border:1px solid var(--border); border-top:none; padding:2.5rem 3rem; display:flex; gap:2.5rem; align-items:flex-start;">
+        <div style="min-width:56px; height:56px; border-radius:14px; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:800; font-size:1.3rem; color:white; flex-shrink:0;">3</div>
+        <div style="flex:1;">
+          <div style="font-family:var(--font-display); font-size:1.3rem; font-weight:700; margin-bottom:0.5rem;">Add Your Gemini API Key</div>
+          <p style="color:var(--muted); font-size:0.92rem; margin-bottom:1.2rem; font-weight:300;">
+            Open the <code style="color:var(--accent2); background:rgba(108,99,255,0.12); padding:2px 7px; border-radius:5px; font-family:monospace;">.env</code> file (found in the extracted folder) in Notepad or any text editor. Replace the placeholder with your actual key:
+          </p>
+          <div style="background:#0a0a14; border:1px solid var(--border2); border-radius:10px; padding:1.2rem 1.5rem; font-family:monospace; font-size:0.9rem; margin-bottom:1.2rem; position:relative;">
+            <div style="color:var(--muted2); font-size:0.75rem; margin-bottom:0.5rem; letter-spacing:0.05em; text-transform:uppercase;">.env</div>
+            <div><span style="color:var(--accent3);">GEMINI_API_KEY</span><span style="color:var(--muted);">=</span><span style="color:var(--green);">your_actual_key_here</span></div>
+          </div>
+          <div style="background:rgba(251,191,36,0.07); border:1px solid rgba(251,191,36,0.2); border-radius:10px; padding:1rem 1.2rem; font-size:0.85rem; color:var(--muted); display:flex; gap:0.7rem; align-items:flex-start;">
+            <span style="color:#fbbf24; font-size:1rem; flex-shrink:0;">⚠</span>
+            Get a free Gemini API key at <a href="https://ai.google.dev" target="_blank" style="color:var(--accent2); text-decoration:none; border-bottom:1px solid rgba(167,139,250,0.3);">ai.google.dev</a>. Without it, AI image generation and smart commands will not function.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4: Optional phone setup -->
+    <div style="margin-bottom: 2px;" class="reveal">
+      <div class="step-block" style="background:var(--bg2); border:1px solid var(--border); border-top:none; padding:2.5rem 3rem; display:flex; gap:2.5rem; align-items:flex-start;">
+        <div style="min-width:56px; height:56px; border-radius:14px; background:var(--surface); border:1px solid var(--border2); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:800; font-size:1.3rem; color:var(--muted); flex-shrink:0;">4</div>
+        <div style="flex:1;">
+          <div style="display:flex; align-items:center; gap:0.8rem; margin-bottom:0.5rem;">
+            <div style="font-family:var(--font-display); font-size:1.3rem; font-weight:700;">Connect Your Phone</div>
+            <span style="font-size:0.75rem; color:var(--muted2); background:rgba(90,90,128,0.15); border:1px solid rgba(90,90,128,0.3); padding:3px 10px; border-radius:100px;">Optional</span>
+          </div>
+          <p style="color:var(--muted); font-size:0.92rem; font-weight:300;">
+            If you want Nora to control your Android phone — making WhatsApp calls, sending messages, etc. — plug in your phone via USB, enable <strong style="color:var(--text);">USB Debugging</strong> in Developer Options, then double-click <code style="color:var(--accent2); background:rgba(108,99,255,0.12); padding:2px 7px; border-radius:5px; font-family:monospace;">device.bat</code> in the extracted folder. You only need to do this once.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5: Run -->
+    <div class="reveal">
+      <div class="step-block" style="background:var(--bg2); border:1px solid var(--border); border-top:none; border-radius:0 0 20px 20px; padding:2.5rem 3rem; display:flex; gap:2.5rem; align-items:flex-start;">
+        <div style="min-width:56px; height:56px; border-radius:14px; background:linear-gradient(135deg, var(--green), #059669); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:800; font-size:1.3rem; color:white; flex-shrink:0;">5</div>
+        <div style="flex:1;">
+          <div style="font-family:var(--font-display); font-size:1.3rem; font-weight:700; margin-bottom:0.5rem;">Launch Nora</div>
+          <p style="color:var(--muted); font-size:0.92rem; margin-bottom:1.2rem; font-weight:300;">
+            Double-click <code style="color:var(--accent2); background:rgba(108,99,255,0.12); padding:2px 7px; border-radius:5px; font-family:monospace;">NoraVoice.exe</code> to start. If Windows shows a SmartScreen warning, click <strong style="color:var(--text);">More Info → Run Anyway</strong>. Nora will start listening in idle mode.
+          </p>
+          <div style="display:flex; gap:1rem; flex-wrap:wrap;">
+            <div style="background:rgba(52,211,153,0.07); border:1px solid rgba(52,211,153,0.2); border-radius:10px; padding:0.9rem 1.2rem; font-size:0.85rem; color:var(--muted); display:flex; gap:0.7rem; align-items:center;">
+              <span style="color:var(--green);">🎙️</span> Say <strong style="color:var(--text);">"Jarvis"</strong> to wake Nora
+            </div>
+            <div style="background:rgba(108,99,255,0.07); border:1px solid rgba(108,99,255,0.2); border-radius:10px; padding:0.9rem 1.2rem; font-size:0.85rem; color:var(--muted); display:flex; gap:0.7rem; align-items:center;">
+              <span style="color:var(--accent2);">⌨️</span> Or press <strong style="color:var(--text);">Ctrl+J</strong>
+            </div>
+            <div style="background:rgba(244,114,182,0.07); border:1px solid rgba(244,114,182,0.2); border-radius:10px; padding:0.9rem 1.2rem; font-size:0.85rem; color:var(--muted); display:flex; gap:0.7rem; align-items:center;">
+              <span style="color:var(--pink);">🛑</span> Say <strong style="color:var(--text);">"stop"</strong> or <strong style="color:var(--text);">"bye"</strong> to idle
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- VOICE COMMANDS -->
+<section id="commands" style="max-width:1280px; margin:0 auto; padding:6rem 2rem;">
+  <div class="reveal" style="text-align:center; margin-bottom:4rem;">
+    <div class="section-label" style="justify-content:center;">Voice Commands</div>
+    <h2 class="section-title">What you can <span class="gradient-text">say to Nora.</span></h2>
+    <p class="section-desc" style="margin:0 auto;">After saying "Jarvis" to wake her, try any of these commands.</p>
+  </div>
+  <div class="reveal" style="background:var(--surface); border:1px solid var(--border); border-radius:20px; overflow:hidden;">
+    <div style="display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid var(--border); background:var(--bg3);">
+      <div style="padding:1rem 2rem; font-family:var(--font-display); font-size:0.78rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted2);">Voice Command</div>
+      <div style="padding:1rem 2rem; font-family:var(--font-display); font-size:0.78rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted2); border-left:1px solid var(--border);">What Nora Does</div>
+    </div>
+    <div class="cmd-row" style="display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid var(--border);">
+      <div style="padding:1.1rem 2rem; font-family:monospace; font-size:0.9rem; color:var(--accent2);">Open [app name]</div>
+      <div style="padding:1.1rem 2rem; font-size:0.9rem; color:var(--muted); border-left:1px solid var(--border);">Launches any installed application on your PC</div>
+    </div>
+    <div class="cmd-row" style="display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid var(--border); background:rgba(255,255,255,0.015);">
+      <div style="padding:1.1rem 2rem; font-family:monospace; font-size:0.9rem; color:var(--accent2);">Generate image of [X]</div>
+      <div style="padding:1.1rem 2rem; font-size:0.9rem; color:var(--muted); border-left:1px solid var(--border);">Creates an AI-generated image using Gemini</div>
+    </div>
+    <div class="cmd-row" style="display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid var(--border);">
+      <div style="padding:1.1rem 2rem; font-family:monospace; font-size:0.9rem; color:var(--accent2);">Create a ppt on [topic]</div>
+      <div style="padding:1.1rem 2rem; font-size:0.9rem; color:var(--muted); border-left:1px solid var(--border);">Builds a full PowerPoint presentation (requires Node.js)</div>
+    </div>
+    <div class="cmd-row" style="display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid var(--border); background:rgba(255,255,255,0.015);">
+      <div style="padding:1.1rem 2rem; font-family:monospace; font-size:0.9rem; color:var(--accent2);">Create [project] in Python</div>
+      <div style="padding:1.1rem 2rem; font-size:0.9rem; color:var(--muted); border-left:1px solid var(--border);">Scaffolds a full-stack coding project (requires MongoDB)</div>
+    </div>
+    <div class="cmd-row" style="display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid var(--border);">
+      <div style="padding:1.1rem 2rem; font-family:monospace; font-size:0.9rem; color:var(--accent2);">Set volume to 80%</div>
+      <div style="padding:1.1rem 2rem; font-size:0.9rem; color:var(--muted); border-left:1px solid var(--border);">Sets Windows system volume to any percentage</div>
+    </div>
+    <div class="cmd-row" style="display:grid; grid-template-columns:1fr 1fr;">
+      <div style="padding:1.1rem 2rem; font-family:monospace; font-size:0.9rem; color:var(--accent2); background:rgba(255,255,255,0.015);">Call [name] on WhatsApp</div>
+      <div style="padding:1.1rem 2rem; font-size:0.9rem; color:var(--muted); border-left:1px solid var(--border); background:rgba(255,255,255,0.015);">Initiates a WhatsApp call via connected phone (requires ADB)</div>
+    </div>
+  </div>
+</section>
+
+<!-- REQUIREMENTS -->
+<section id="requirements" style="max-width:1280px; margin:0 auto; padding:2rem 2rem 8rem;">
+  <div class="reveal">
+    <div class="section-label">System Requirements</div>
+    <h2 class="section-title">What you'll <span class="gradient-text">need.</span></h2>
+    <p class="section-desc">Nora runs smoothly on most modern Windows machines.</p>
+  </div>
+  <div class="req-grid reveal">
+    <div class="req-card">
+      <div class="req-card-title">
+        <span style="font-size:1.2rem;">💻</span> Minimum Requirements
+      </div>
+      <ul class="req-list">
+        <li><span class="req-check">✓</span> Windows 10 (64-bit) or higher</li>
+        <li><span class="req-check">✓</span> Intel Core i3 / AMD Ryzen 3 or equivalent</li>
+        <li><span class="req-check">✓</span> 4 GB RAM</li>
+        <li><span class="req-check">✓</span> 500 MB free disk space</li>
+        <li><span class="req-check">✓</span> Any working microphone</li>
+        <li><span class="req-check">✓</span> Node.js LTS + MongoDB Community installed</li>
+      </ul>
+    </div>
+    <div class="req-card">
+      <div class="req-card-title">
+        <span style="font-size:1.2rem;">🚀</span> Recommended for Best Experience
+      </div>
+      <ul class="req-list">
+        <li><span class="req-check">✓</span> Windows 11 (64-bit)</li>
+        <li><span class="req-check">✓</span> Intel Core i5 / AMD Ryzen 5 or better</li>
+        <li><span class="req-check">✓</span> 8 GB RAM</li>
+        <li><span class="req-check">✓</span> 1 GB free disk space</li>
+        <li><span class="req-check">✓</span> Dedicated microphone or noise-cancelling headset</li>
+        <li><span class="req-check">✓</span> ADB installed for Android phone control</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section id="testimonials">
+  <div class="testi-header reveal">
+    <div class="section-label">Community</div>
+    <h2 class="section-title">Loved by <span class="gradient-text">early users.</span></h2>
+  </div>
+  <div class="testi-grid reveal">
+    <div class="testi-card">
+      <div class="testi-stars">★★★★★</div>
+      <p class="testi-text">"Honestly blew me away. I've tried a dozen voice control apps and nothing comes close to how natural VoiceOS feels. The wake word setup is genius."</p>
+      <div class="testi-author">
+        <div class="testi-avatar" style="background:rgba(108,99,255,0.2);color:var(--accent2);">AK</div>
+        <div><div class="testi-name">Arjun K.</div><div class="testi-role">Software Engineer</div></div>
+      </div>
+    </div>
+    <div class="testi-card">
+      <div class="testi-stars">★★★★★</div>
+      <p class="testi-text">"As someone with limited hand mobility, this is genuinely life-changing. I can work a full day without touching a keyboard. The accuracy is incredible."</p>
+      <div class="testi-author">
+        <div class="testi-avatar" style="background:rgba(56,189,248,0.2);color:var(--accent3);">SP</div>
+        <div><div class="testi-name">Sarah P.</div><div class="testi-role">UX Designer</div></div>
+      </div>
+    </div>
+    <div class="testi-card">
+      <div class="testi-stars">★★★★★</div>
+      <p class="testi-text">"The privacy angle is what sold me. Everything local, no cloud, no subscriptions. It's fast, reliable, and I actually trust it with my work machine."</p>
+      <div class="testi-author">
+        <div class="testi-avatar" style="background:rgba(52,211,153,0.2);color:var(--green);">MR</div>
+        <div><div class="testi-name">Marcus R.</div><div class="testi-role">Security Analyst</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="faq-header reveal">
+    <div class="section-label">FAQ & Troubleshooting</div>
+    <h2 class="section-title">Questions, <span class="gradient-text">answered.</span></h2>
+  </div>
+  <div class="reveal">
+    <div class="faq-item">
+      <div class="faq-q">Nora won't start — what do I do? <span class="faq-arrow">▾</span></div>
+      <div class="faq-a">Try running <code style="color:var(--accent2); background:rgba(108,99,255,0.1); padding:1px 6px; border-radius:4px; font-family:monospace;">NoraVoice.exe</code> as Administrator. Right-click the file and select "Run as administrator". Windows sometimes blocks apps from non-Store sources without elevated permissions. Also make sure your antivirus isn't quarantining the file.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Voice recognition isn't working. <span class="faq-arrow">▾</span></div>
+      <div class="faq-a">Check that your microphone is properly connected and that Windows has microphone permissions enabled for the app. Go to Settings → Privacy → Microphone and ensure microphone access is turned on. Also verify that the correct input device is selected as your default microphone in Windows sound settings.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Image generation fails — how do I fix it? <span class="faq-arrow">▾</span></div>
+      <div class="faq-a">This is almost always caused by a missing or incorrect API key. Open the <code style="color:var(--accent2); background:rgba(108,99,255,0.1); padding:1px 6px; border-radius:4px; font-family:monospace;">.env</code> file in your Nora folder and confirm that <code style="color:var(--accent2); font-family:monospace;">GEMINI_API_KEY</code> is set to a valid key. Get a free key at <a href="https://ai.google.dev" target="_blank" style="color:var(--accent2);">ai.google.dev</a>. Make sure there are no spaces around the <code style="font-family:monospace;">=</code> sign.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Do I need to install Node.js and MongoDB even if I don't use those features? <span class="faq-arrow">▾</span></div>
+      <div class="faq-a">Node.js is only strictly required if you plan to use the "Create a PPT on..." command. MongoDB is only required for the code generator commands. If you only want basic voice control and image generation, you can skip them — Nora will still run, but those specific commands won't work until the dependencies are installed.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">How do I connect my Android phone? <span class="faq-arrow">▾</span></div>
+      <div class="faq-a">First install ADB (Android platform tools) and add it to your system PATH. On your phone, go to Settings → About Phone → tap Build Number 7 times to enable Developer Mode, then go to Developer Options and enable USB Debugging. Connect your phone via USB cable, then double-click <code style="color:var(--accent2); background:rgba(108,99,255,0.1); padding:1px 6px; border-radius:4px; font-family:monospace;">device.bat</code> in the Nora folder. Accept the USB debugging prompt on your phone.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Is Nora free to use? <span class="faq-arrow">▾</span></div>
+      <div class="faq-a">Yes. Nora itself is completely free. The only cost involved is if you exceed Google Gemini's free API tier, which is very generous for personal use. Node.js, MongoDB, and ADB are all also free. There are no subscriptions or hidden fees.</div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA BANNER -->
+<div class="cta-banner reveal">
+  <div class="cta-banner-glow"></div>
+  <div class="section-label" style="justify-content: center;">Get VoiceOS</div>
+  <h2 class="section-title">Ready to give Nora a <span class="gradient-text">voice command?</span></h2>
+    <p class="section-desc">Download for free, add your API key, and you're talking to your PC in under 10 minutes.</p>
+  <div class="hero-actions" style="margin-top: 3rem;">
+    <a href="#download" class="btn-primary">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download for Free
+    </a>
+    <a href="#faq" class="btn-secondary">Read the FAQ</a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <a href="#" class="nav-logo" style="margin-bottom: 1rem; display: inline-flex;">
+        <div class="nav-logo-icon"></div>
+        Nora
+      </a>
+      <p>An AI-powered voice OS for Windows. Say "Jarvis" and control everything — apps, images, code, presentations, and your phone.</p>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Product</div>
+      <a href="#features">Features</a>
+      <a href="#download">Download</a>
+      <a href="#requirements">Requirements</a>
+      <a href="#">Changelog</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Resources</div>
+      <a href="#">Documentation</a>
+      <a href="#">GitHub</a>
+      <a href="#">API Reference</a>
+      <a href="#">Community</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Company</div>
+      <a href="#">About</a>
+      <a href="#">Blog</a>
+      <a href="#">Contact</a>
+      <a href="#">License</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2025 Nora Voice OS. Free to use.</span>
+    <div class="footer-links-bottom">
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms</a>
+      <a href="#">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Navbar scroll effect
+  const navbar = document.getElementById('navbar');
+  window.addEventListener('scroll', () => {
+    navbar.classList.toggle('scrolled', window.scrollY > 60);
+  });
+
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), i * 80);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  reveals.forEach(el => observer.observe(el));
+
+  // FAQ accordion
+  document.querySelectorAll('.faq-q').forEach(q => {
+    q.addEventListener('click', () => {
+      const item = q.parentElement;
+      const wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      if (!wasOpen) item.classList.add('open');
+    });
+  });
+
+  // Download button click effect
+  const dlBtn = document.getElementById('dl-btn');
+  if (dlBtn) {
+    dlBtn.addEventListener('click', function(e) {
+      this.style.background = 'linear-gradient(135deg, #34d399, #059669)';
+      this.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Downloading...`;
+      setTimeout(() => {
+        this.style.background = '';
+        this.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download NoraVoice.zip`;
+      }, 3000);
+    });
+  }
+
+  // Smooth scroll for anchor links
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+</script>
+</body>
+</html>
